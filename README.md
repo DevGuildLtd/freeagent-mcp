@@ -11,12 +11,17 @@ A small MCP server for the [FreeAgent API v2](https://dev.freeagent.com/docs). I
    ```
    Or set `FREEAGENT_CLIENT_ID` and `FREEAGENT_CLIENT_SECRET`.
 3. `npm install`
-4. `npm run login` and approve access in the browser. Tokens go to `~/.config/freeagent-mcp/tokens.json` and refresh on their own.
+
+## Tokens
+
+By default the server keeps OAuth tokens in memory only. Nothing goes to disk. The first FreeAgent call in each server process opens the approval page in your browser and waits up to 3 minutes. When you approve, the call goes on. The tokens die with the process, so every new session needs a new approval.
+
+To keep tokens across sessions, set `FREEAGENT_TOKEN_STORE=file` and run `npm run login` once. Tokens then go to `~/.config/freeagent-mcp/tokens.json` (mode 600) and refresh on their own. Any process running as your user can read that file.
 
 ## Add to Claude Code
 
 ```sh
-claude mcp add freeagent -s user -- node /Users/mneveroff/Code/freeagent-mcp/src/index.ts
+claude mcp add freeagent -s user -e FREEAGENT_ALLOW_WRITES=1 -- node /Users/mneveroff/Code/freeagent-mcp/src/index.ts
 ```
 
 ## Tools
@@ -32,6 +37,7 @@ claude mcp add freeagent -s user -- node /Users/mneveroff/Code/freeagent-mcp/src
 
 ## Environment
 
+- `FREEAGENT_TOKEN_STORE=file` saves tokens to disk. Default is `memory`.
 - `FREEAGENT_SANDBOX=1` uses `api.sandbox.freeagent.com` and a separate token file.
 - `FREEAGENT_ALLOW_WRITES=1` turns on `freeagent_write`. Read-only by default.
 - `FREEAGENT_CONFIG_DIR` changes the config folder.

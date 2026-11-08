@@ -1,5 +1,8 @@
 import { z } from "zod";
 import { apiBase, loadApp, loadTokens, saveTokens, type AppConfig, type Tokens } from "./config.ts";
+import { interactiveLogin } from "./auth.ts";
+
+export const tokenStore = process.env.FREEAGENT_TOKEN_STORE === "file" ? "file" : "memory";
 
 const tokenResponse = z.object({
   access_token: z.string(),
@@ -30,7 +33,6 @@ export async function exchangeToken(
     refreshToken,
     expiresAt: Date.now() + data.expires_in * 1000,
   };
-  await saveTokens(tokens);
   return tokens;
 }
 
@@ -47,19 +49,29 @@ export class FreeAgentClient {
   private tokens: Tokens | null = null;
   private app: AppConfig | null = null;
 
+  private login: Promise<Tokens> | null = null;
+
   private async accessToken(force = false): Promise<string> {
     this.app ??= await loadApp();
-    this.tokens ??= await loadTokens();
+    if (!this.tokens && tokenStore === "file") this.tokens = await loadTokens();
     if (!this.tokens) {
-      throw new Error("Not logged in to FreeAgent. Run `npm run login` in the freeagent-mcp repo.");
-    }
-    if (force || this.tokens.expiresAt - Date.now() < 60_000) {
+      this.login ??= interactiveLogin(this.app, {
+        timeoutMs: 3 * 60_000,
+        onUrl: (url) => console.error(`FreeAgent approval needed: ${url}`),
+      }).finally(() => {
+        this.login = null;
+      });
+      this.tokens = await this.login;
+    } else if (force || this.tokens.expiresAt - Date.now() < 60_000) {
       this.tokens = await exchangeToken(
         this.app,
         { grant_type: "refresh_token", refresh_token: this.tokens.refreshToken },
         this.tokens.refreshToken,
       );
+    } else {
+      return this.tokens.accessToken;
     }
+    if (tokenStore === "file") await saveTokens(this.tokens);
     return this.tokens.accessToken;
   }
 
