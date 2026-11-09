@@ -31,7 +31,7 @@ To test without real data, also create a sandbox company at <https://signup.sand
 ## 2. Install
 
 ```sh
-git clone git@github.com:DevGuildLtd/freeagent-mcp.git
+git clone https://github.com/DevGuildLtd/freeagent-mcp.git
 cd freeagent-mcp
 npm ci
 ```
@@ -163,3 +163,7 @@ All settings are environment variables.
 npm run typecheck
 FREEAGENT_SANDBOX=1 npm start
 ```
+
+## License
+
+MIT. See [LICENSE](LICENSE).
