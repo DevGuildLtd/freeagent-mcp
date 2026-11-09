@@ -64,7 +64,18 @@ export function interactiveLogin(
 
     server.listen(Number(redirect.port || 80), redirect.hostname, () => {
       opts.onUrl(url);
-      if (process.platform === "darwin") execFile("open", [url]);
+      openBrowser(url);
     });
   });
+}
+
+function openBrowser(url: string): void {
+  if (process.env.FREEAGENT_NO_BROWSER === "1") return;
+  const [cmd, args] =
+    process.platform === "darwin"
+      ? ["open", [url]]
+      : process.platform === "win32"
+        ? ["rundll32", ["url.dll,FileProtocolHandler", url]]
+        : ["xdg-open", [url]];
+  execFile(cmd, args, () => {});
 }
